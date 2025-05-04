@@ -1,0 +1,32 @@
+services:
+  api:
+    build: .
+    ports:
+      - "80:80"
+    env_file: 
+      - .env
+    volumes:
+      - ./.env:/app/.env  # Mantido (só o .env sincronizado)
+      # Removido: - ./dist:/app/dist  (O dist agora é gerado apenas dentro do container)
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: water_gas_db
+    command: --init-file /docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+
+volumes:
+  db_data:

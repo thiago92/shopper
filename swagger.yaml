@@ -1,0 +1,88 @@
+openapi: 3.0.0
+info:
+  title: API Shopper
+  version: 1.0.0
+  description: Documentação da API de medições
+servers:
+  - url: http://localhost:80
+paths:
+  /upload:
+    post:
+      tags:
+        - Upload
+      summary: Envia imagem do medidor para análise
+      description: |
+        Recebe uma imagem em base64 e retorna:
+        - URL temporária da imagem
+        - Valor da medição
+        - UUID da medição
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - image
+                - customer_code
+                - measure_type
+              properties:
+                image:
+                  type: string
+                  description: Imagem em base64 (data URI)
+                  example: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+                customer_code:
+                  type: string
+                  example: "cliente-1"
+                measure_datetime:
+                  type: string
+                  format: date-time
+                  example: "2024-05-20T14:30:00Z"
+                measure_type:
+                  type: string
+                  enum: [WATER, GAS]
+                  example: "WATER"
+      responses:
+        200:
+          description: Medição processada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  image_url:
+                    type: string
+                    example: "https://storage.example.com/550e8400.jpg"
+                  measure_value:
+                    type: number
+                    example: 150
+                  measure_uuid:
+                    type: string
+                    format: uuid
+                    example: "550e8400-e29b-41d4-a716-446655440000"
+        400:
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error_code:
+                    type: string
+                    example: "INVALID_DATA"
+                  error_description:
+                    type: string
+                    example: "O campo image é obrigatório"
+        409:
+          description: Leitura duplicada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error_code:
+                    type: string
+                    example: "DOUBLE_REPORT"
+                  error_description:
+                    type: string
+                    example: "Leitura do mês já realizada"
