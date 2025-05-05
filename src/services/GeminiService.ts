@@ -15,6 +15,7 @@ export class GeminiService {
       
       const { pureBase64, mimeType } = this.validateAndPrepareImage(imageData);
       console.log('[GeminiService] Imagem validada - Tipo:', mimeType);
+      console.log('[GeminiService] Base64 validado - Tipo:', pureBase64);
 
       const model = this.genAI.getGenerativeModel({
         model: "gemini-1.5-flash",
