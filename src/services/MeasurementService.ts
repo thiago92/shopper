@@ -8,7 +8,10 @@ export class MeasurementService {
     measure_datetime: string;
     measure_type: 'WATER' | 'GAS';
   }) {
-    const measuredValue = await GeminiService.analyzeImage(data.image);
+    const measuredValue = await GeminiService.analyzeImage({
+      mimeType: 'image/jpeg', // Replace with the actual MIME type if known
+      data: data.image
+    });
 
     return {
       imageUrl: await this.storeImage(data.image), 

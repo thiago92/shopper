@@ -35,13 +35,14 @@ export class MeasureRepository {
   static async confirmMeasure(
     uuid: string, 
     confirmedValue: number,
+    confirmedBy: string,
     conn?: PoolConnection
   ): Promise<void> {
     await (conn || pool).query(
       `UPDATE measures 
-       SET confirmed_value = ?, is_confirmed = TRUE 
+       SET confirmed_value = ?, is_confirmed = TRUE, confirmed_by = ? 
        WHERE measure_uuid = ?`,
-      [confirmedValue, uuid]
+      [confirmedValue, confirmedBy, uuid]
     );
   }
 

@@ -10,13 +10,16 @@ const confirmSchema = z.object({
   }),
   confirmed_value: z.number().positive({
     message: "O valor confirmado deve ser positivo"
+  }),
+  confirmed_by: z.string().min(3, {
+    message: "Nome do confirmador deve ter pelo menos 3 caracteres"
   })
 });
 
 export const confirmHandler = async (req: Request, res: Response) => {
   const conn = await pool.getConnection();
   try {
-    const { measure_uuid, confirmed_value } = confirmSchema.parse(req.body);
+    const { measure_uuid, confirmed_value, confirmed_by } = confirmSchema.parse(req.body);
 
     await conn.beginTransaction();
 
@@ -28,19 +31,41 @@ export const confirmHandler = async (req: Request, res: Response) => {
 
     // 2. Verifica se já foi confirmada
     if (measure.is_confirmed) {
-      throw new AppError('CONFIRMATION_DUPLICATE', 'Leitura já confirmada', 409);
+      throw new AppError('MEASURE_ALREADY_CONFIRMED', 'Leitura já confirmada', 409);
     }
 
-    // 3. Atualiza no banco
-    await MeasureRepository.confirmMeasure(measure_uuid, confirmed_value, conn);
+    // 3. Validação adicional do valor
+    if (confirmed_value < measure.initial_value * 0.9 || 
+        confirmed_value > measure.initial_value * 1.1) {
+      throw new AppError(
+        'VALUE_OUT_OF_RANGE',
+        'Valor confirmado difere muito do valor inicial (acima de 10%)',
+        400
+      );
+    }
+
+    // 4. Atualiza no banco
+    await MeasureRepository.confirmMeasure(
+      measure_uuid, 
+      confirmed_value, 
+      confirmed_by,
+      conn
+    );
 
     await conn.commit();
-    res.status(200).json({ success: true });
+    
+    res.status(200).json({ 
+      success: true,
+      data: {
+        measure_uuid,
+        previous_value: measure.initial_value,
+        confirmed_value,
+        confirmation_date: new Date().toISOString()
+      }
+    });
 
   } catch (error) {
     await conn.rollback();
-    
-    const message = error instanceof Error ? error.message : 'Erro desconhecido';
     
     if (error instanceof z.ZodError) {
       return res.status(400).json({
@@ -59,7 +84,7 @@ export const confirmHandler = async (req: Request, res: Response) => {
     console.error('Erro inesperado:', error);
     res.status(500).json({
       error_code: "INTERNAL_ERROR",
-      error_description: message
+      error_description: error instanceof Error ? error.message : 'Erro desconhecido'
     });
   } finally {
     conn.release();

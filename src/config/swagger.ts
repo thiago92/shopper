@@ -49,7 +49,21 @@ export const setupSwagger = (app: Application) => {
                     water: {
                       summary: 'Medição de água',
                       value: {
-                        image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAACXBIWXMAAA7EAAAOxAGVKw4bAAABHklEQVQoz2NgGAWjgP///wzEAQzIAEFKABoBFbAMjAwMDGDA4f///88DCwkJsA2QBaIZf6aBgYGhlZGRkYGBgY8aNjAwMDLxD1AoIBbQBMjFgAyLA8gGSgwYMBAlA1EDmBqgB9gAhiAGZgWf8nQA8QwMiAsgqgVo2AiOABpF1wBWAVDHDdAACsEgVgAqH8CMJAA6QUwzEAaFWDJgYBBgAQCXUZsDBkiuDwAAAABJRU5ErkJggg==",
+                        contents: [
+                          {
+                            parts: [
+                              {
+                                inlineData: {
+                                  mimeType: 'image/png',
+                                  data: "iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAACXBIWXMAAA7EAAAOxAGVKw4bAAABHklEQVQoz2NgGAWjgP///wzEAQzIAEFKABoBFbAMjAwMDGDA4f///88DCwkJsA2QBaIZf6aBgYGhlZGRkYGBgY8aNjAwMDLxD1AoIBbQBMjFgAyLA8gGSgwYMBAlA1EDmBqgB9gAhiAGZgWf8nQA8QwMiAsgqgVo2AiOABpF1wBWAVDHDdAACsEgVgAqH8CMJAA6QUwzEAaFWDJgYBBgAQCXUZsDBkiuDwAAAABJRU5ErkJggg=="
+                                }
+                              },
+                              {
+                                text: "Esta é uma medição de água."
+                              }
+                            ]
+                          }
+                        ],
                         customer_code: "cliente-1",
                         measure_datetime: "2024-05-20T14:30:00Z",
                         measure_type: "WATER"
@@ -58,12 +72,26 @@ export const setupSwagger = (app: Application) => {
                     gas: {
                       summary: 'Medição de gás',
                       value: {
-                        image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAACXBIWXMAAA7EAAAOxAGVKw4bAAABHklEQVQoz2NgGAWjgP///wzEAQzIAEFKABoBFbAMjAwMDGDA4f///88DCwkJsA2QBaIZf6aBgYGhlZGRkYGBgY8aNjAwMDLxD1AoIBbQBMjFgAyLA8gGSgwYMBAlA1EDmBqgB9gAhiAGZgWf8nQA8QwMiAsgqgVo2AiOABpF1wBWAVDHDdAACsEgVgAqH8CMJAA6QUwzEAaFWDJgYBBgAQCXUZsDBkiuDwAAAABJRU5ErkJggg==",
+                        contents: [
+                          {
+                            parts: [
+                              {
+                                inlineData: {
+                                  mimeType: 'image/png',
+                                  data: "iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAACXBIWXMAAA7EAAAOxAGVKw4bAAABHklEQVQoz2NgGAWjgP///wzEAQzIAEFKABoBFbAMjAwMDGDA4f///88DCwkJsA2QBaIZf6aBgYGhlZGRkYGBgY8aNjAwMDLxD1AoIBbQBMjFgAyLA8gGSgwYMBAlA1EDmBqgB9gAhiAGZgWf8nQA8QwMiAsgqgVo2AiOABpF1wBWAVDHDdAACsEgVgAqH8CMJAA6QUwzEAaFWDJgYBBgAQCXUZsDBkiuDwAAAABJRU5ErkJggg=="
+                                }
+                              },
+                              {
+                                text: "Esta é uma medição de gás."
+                              }
+                            ]
+                          }
+                        ],
                         customer_code: "cliente-1",
                         measure_datetime: "2024-05-20T14:30:00Z",
                         measure_type: "GAS"
                       }
-                    }
+                    },
                   }                  
               }
             }
@@ -136,34 +164,59 @@ export const setupSwagger = (app: Application) => {
       schemas: {
         UploadRequest: {
           type: 'object',
-          required: ['image', 'customer_code', 'measure_type'],
+          required: ['contents', 'customer_code', 'measure_type'],
           properties: {
-            image: {
-              type: 'string',
-              description: 'Imagem codificada em base64 (data URI)',
-              example: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+            contents: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  parts: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        inlineData: {
+                          type: 'object',
+                          properties: {
+                            mimeType: { type: 'string', example: 'image/png' },
+                            data: {
+                              type: 'string',
+                              description: 'Imagem em base64 (sem cabeçalho data URI)',
+                              example: 'iVBORw0KGgoAAAANSUhEUgAA...'
+                            }
+                          }
+                        },
+                        text: {
+                          type: 'string',
+                          description: 'Texto opcional relacionado à imagem',
+                          example: 'Esta é uma medição de água.'
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             },
             customer_code: {
               type: 'string',
               description: 'Código único do cliente',
-              example: "cliente-1",
-              minLength: 3,
-              maxLength: 50
+              example: 'cliente-1'
             },
             measure_datetime: {
               type: 'string',
               format: 'date-time',
               description: 'Data e hora da medição (ISO 8601)',
-              example: "2024-05-20T14:30:00Z"
+              example: '2024-05-20T14:30:00Z'
             },
             measure_type: {
               type: 'string',
               enum: ['WATER', 'GAS'],
               description: 'Tipo de medição',
-              example: "WATER"
+              example: 'WATER'
             }
           }
-        },
+        },        
         UploadResponse: {
           type: 'object',
           properties: {

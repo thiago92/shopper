@@ -7,10 +7,18 @@ import { MeasurementService } from '../services/MeasurementService';
 const router = Router();
 
 type UploadRequest = {
-    image: string;
-    customer_code: string;
-    measure_datetime: string;
-    measure_type: 'WATER' | 'GAS';
+  contents: Array<{
+    parts: Array<{
+      inlineData?: {
+        mimeType: string;
+        data: string;
+      };
+      text?: string;
+    }>;
+  }>;
+  customer_code: string;
+  measure_datetime?: string;
+  measure_type: 'WATER' | 'GAS';
 };
 
 /**
@@ -38,14 +46,29 @@ type UploadRequest = {
  *           schema:
  *             type: object
  *             required:
- *               - image
+ *               - contents
  *               - customer_code
  *               - measure_type
  *             properties:
- *               image:
- *                 type: string
- *                 description: Imagem em base64 (data URI)
- *                 example: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+ *               contents:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     parts:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           inlineData:
+ *                             type: object
+ *                             properties:
+ *                               mimeType:
+ *                                 type: string
+ *                               data:
+ *                                 type: string
+ *                           text:
+ *                             type: string
  *               customer_code:
  *                 type: string
  *                 example: "cliente-1"
@@ -106,33 +129,41 @@ router.post(
   '/',
   async (req: Request<{}, {}, UploadRequest>, res: Response, next: NextFunction) => {
     try {
-        const { image, customer_code, measure_datetime, measure_type } = req.body;
+      const { contents, customer_code, measure_datetime, measure_type } = req.body;
 
-        // Validação centralizada
-        UploadValidator.validateRequest(req.body);
+      const image = contents?.[0]?.parts?.find(p => p.inlineData?.data)?.inlineData?.data;
 
-        // Processamento com serviço dedicado
-        const result = await MeasurementService.processUpload({
-            image,
-            customer_code,
-            measure_datetime: measure_datetime || new Date().toISOString(),
-            measure_type
-        });
+      if (!image) {
+        throw new AppError('Imagem não fornecida', 'INVALID_IMAGE', 400);
+      }
 
-        // Resposta padronizada
-        return res.status(200).json({
-            image_url: result.imageUrl,
-            measure_value: result.value,
-            measure_uuid: result.uuid
-        });
+      UploadValidator.validateRequest({
+        ...req.body,
+        measure_datetime: req.body.measure_datetime || new Date().toISOString(),
+      });
+
+      const result = await MeasurementService.processUpload({
+        image, // já é base64
+        customer_code,
+        measure_datetime: measure_datetime || new Date().toISOString(),
+        measure_type
+      });
+
+      return res.status(200).json({
+        image_url: result.imageUrl,
+        measure_value: result.value,
+        measure_uuid: result.uuid
+      });
 
     } catch (error) {
       if (error instanceof AppError) {
         return res.status(error.statusCode).json({
-            error_code: error.errorCode,
-            error_description: error.message
+          error_code: error.errorCode,
+          error_description: error.message
         });
       }
+
+      console.error('[ERROR] Erro durante o upload:', error);
       next(error);
     }
   }
